@@ -21,6 +21,7 @@ use Digest::HMAC_SHA1;
 use FindBin;
 use MIME::Base64 qw(encode_base64);
 use Getopt::Long qw(GetOptions);
+use URI::Escape;
 
 use constant STAT_MODE => 2;
 use constant STAT_UID => 4;
@@ -314,11 +315,3 @@ Will sleep and continue despite this problem.
 Please set up $DOTFILE for future requests.
 END_WARNING
 }
-
-sub uri_unescape {
-  my ($input) = @_;
-  $input =~ s/\%([A-Fa-f0-9]{2})/pack('C', hex($1))/seg;
-  debug("replaced string: " . $input);
-  return ($input); 
-}
-
