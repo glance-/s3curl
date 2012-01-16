@@ -55,6 +55,7 @@ my $copySourceObject;
 my $copySourceRange;
 my $postBody;
 my $print;
+my $expires;
 
 my $DOTFILENAME=".s3curl";
 my $EXECFILE=$FindBin::Bin;
@@ -95,6 +96,7 @@ GetOptions(
     'help' => \$help,
     'debug' => \$debug,
     'print' => \$print,
+    'expires=s' => \$expires,
 );
 
 my $usage = <<USAGE;
@@ -112,6 +114,9 @@ Usage $0 --id friendly-name (or AWSAccessKeyId) [options] -- [curl-options] [URL
   --head                      HEAD request
   --debug                     enable debug logging
   --print                     print command instead of executing it
+  --expires                   Generate a signed url that expiers, specified as
+                              the number of seconds since the epoch or +seconds
+                              for a expire +seconds in the future
  common curl options:
   -H 'x-amz-acl: public-read' another way of using canned ACLs
   -v                          verbose logging
@@ -217,17 +222,30 @@ foreach (sort (keys %xamzHeaders)) {
 }
 
 my $httpDate = POSIX::strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime );
-my $stringToSign = "$method\n$contentMD5\n$contentType\n$httpDate\n$xamzHeadersToSign$resource";
+my $stringToSign;
+
+if (defined($expires)) {
+    if ($expires =~ s/^\+//) {
+        $expires = time()+int($expires);
+    }
+    debug("Expires: at $expires");
+    $stringToSign = "$method\n$contentMD5\n$contentType\n$expires\n$xamzHeadersToSign$resource";
+} else {
+    $stringToSign = "$method\n$contentMD5\n$contentType\n$httpDate\n$xamzHeadersToSign$resource";
+}
 
 debug("StringToSign='" . $stringToSign . "'");
 my $hmac = Digest::HMAC_SHA1->new($secretKey);
 $hmac->add($stringToSign);
 my $signature = encode_base64($hmac->digest, "");
+debug("signature='" . $signature. "'");
 
 
 my @args = ();
-push @args, ("-H", "Date: $httpDate");
-push @args, ("-H", "Authorization: AWS $keyId:$signature");
+unless (defined($expires)) {
+    push @args, ("-H", "Date: $httpDate");
+    push @args, ("-H", "Authorization: AWS $keyId:$signature");
+}
 push @args, ("-H", "x-amz-acl: $acl") if (defined $acl);
 push @args, ("-L");
 push @args, ("-H", "content-type: $contentType") if (length $contentType);
@@ -257,13 +275,19 @@ if (defined $createBucket) {
     }
 }
 
+if (defined($expires)) {
+    my $url = shift @ARGV;
+    $signature = uri_escape($signature);
+    push @args, ("\'$url?AWSAccessKeyId=$keyId&Signature=$signature&Expires=$expires\'");
+}
+
 push @args, @ARGV;
 
 debug("exec $CURL " . join (" ", @args));
 
 if (defined($print)) {
-	print join(" ", $CURL, @args, "\n");
-	exit(0)
+    print join(" ", $CURL, @args, "\n");
+    exit(0)
 }
 exec($CURL, @args)  or die "can't exec program: $!";
 
