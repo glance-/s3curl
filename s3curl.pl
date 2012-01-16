@@ -54,6 +54,7 @@ my $debug = 0;
 my $copySourceObject;
 my $copySourceRange;
 my $postBody;
+my $print;
 
 my $DOTFILENAME=".s3curl";
 my $EXECFILE=$FindBin::Bin;
@@ -92,7 +93,8 @@ GetOptions(
     'createBucket:s' => \$createBucket,
     'head' => \$doHead,
     'help' => \$help,
-    'debug' => \$debug
+    'debug' => \$debug,
+    'print' => \$print,
 );
 
 my $usage = <<USAGE;
@@ -109,6 +111,7 @@ Usage $0 --id friendly-name (or AWSAccessKeyId) [options] -- [curl-options] [URL
   --createBucket [<region>]   create-bucket with optional location constraint
   --head                      HEAD request
   --debug                     enable debug logging
+  --print                     print command instead of executing it
  common curl options:
   -H 'x-amz-acl: public-read' another way of using canned ACLs
   -v                          verbose logging
@@ -257,6 +260,11 @@ if (defined $createBucket) {
 push @args, @ARGV;
 
 debug("exec $CURL " . join (" ", @args));
+
+if (defined($print)) {
+	print join(" ", $CURL, @args, "\n");
+	exit(0)
+}
 exec($CURL, @args)  or die "can't exec program: $!";
 
 sub debug {
