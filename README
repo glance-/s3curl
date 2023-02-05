@@ -1,3 +1,13 @@
+IMPORTANT:
+This was my old repo for publishing the changes I did for creating signed urls with this tool.
+
+This isn't used by me any longer, and I don't know how well it works any longer.
+
+I'd suggest you who find this instead go look at the upstream source at:
+https://aws.amazon.com/code/amazon-s3-authentication-tool-for-curl/
+
+
+Original:
 This script is a wrapper around curl, a popular command line http client, that
 will calculate the authentication parameters for the request.
 
