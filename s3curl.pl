@@ -17,6 +17,8 @@ use POSIX;
 # you might need to use CPAN to get these modules.
 # run perl -MCPAN -e "install <module>" to get them.
 
+use utf8;
+use Encode;
 use Digest::HMAC_SHA1;
 use FindBin;
 use MIME::Base64 qw(encode_base64);
@@ -29,9 +31,13 @@ use constant STAT_UID => 4;
 # begin customizing here
 my @endpoints = ( 's3.amazonaws.com',
                   's3-us-west-1.amazonaws.com',
+                  's3-us-west-2.amazonaws.com',
+                  's3-us-gov-west-1.amazonaws.com',
                   's3-eu-west-1.amazonaws.com',
                   's3-ap-southeast-1.amazonaws.com',
-                  's3-ap-northeast-1.amazonaws.com' );
+                  's3-ap-northeast-1.amazonaws.com',
+                  's3-ap-northeast-2.amazonaws.com',
+                  's3-sa-east-1.amazonaws.com', );
 
 my $CURL = "curl";
 
@@ -236,7 +242,7 @@ if (defined($expires)) {
 
 debug("StringToSign='" . $stringToSign . "'");
 my $hmac = Digest::HMAC_SHA1->new($secretKey);
-$hmac->add($stringToSign);
+$hmac->add(Encode::encode_utf8($stringToSign));
 my $signature = encode_base64($hmac->digest, "");
 debug("signature='" . $signature. "'");
 
